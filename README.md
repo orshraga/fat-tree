@@ -11,7 +11,7 @@ pairs remain connected.
 - [x] Basic metric: fraction of reachable host pairs (`metrics.py`)
 - [x] Command-line interface with JSON config support (`cli.py`)
 - [x] Failure-rate sweep with CSV output and matplotlib plot (`experiment.py`)
-- [ ] Results and discussion (after running the sweep)
+- [x] Results and discussion (below)
 
 ## Setup
 
@@ -34,7 +34,7 @@ k = 4
 hosts: 16, switches: 20, links: 48 (fabric: 32)
 failure rate: 0.05 (seed 1)
 failed fabric links: 2 of 32
-reachable host pairs: 118 of 120 (98.3%)
+reachable host pairs: 120 of 120 (100.0%)
 ```
 
 Or from a config file:
@@ -79,14 +79,14 @@ Outputs in `out_dir`:
 ## Failure model
 
 - **Scope:** only switch-to-switch links (edge↔aggregation and aggregation↔core) can fail.
-  Host↔edge links never fail, so a host is never disconnected from its own edge switch by a failure.
+  Host↔edge links never fail, so a failure never disconnects a host from its own edge switch.
   Failing host links as well is left for future work.
 - **Count:** the number of failed links is `round(rate × number_of_fabric_links)`.
   For k=4 there are 32 fabric links, so rate 0.05 fails round(1.6) = 2 links.
   Python's `round` sends halves to the nearest even number.
 - **Selection:** links are sorted into a fixed order, then a uniform random sample is drawn with `random.Random(seed)`.
   The result depends only on (k, rate, seed).
-- **Independence:** failures are independent and uniform. No correlation between links, and no switch-level failures.
+- **Independence:** failures are independent and uniform. There is no correlation between links and no switch-level failures.
 
 ## Metric: reachable host pairs
 
@@ -136,14 +136,54 @@ aggregation switch in its pod. Aggregation switch `a` in each pod connects to co
 
 ## Results
 
-*To be filled in after running `experiment.py`. Each plot needs: the setup and parameters,
-the observed result, and an explanation of why it matters.*
-
 ### Example 1: Reachable host pairs vs. failure rate, for k = 4, 6, 8
 
-- **Setup:** `configs/sweep.json`, 30 seeds per point, failure rates 0 to 20%, switch-to-switch links only.
-- **Observed:** *(to write)*
-- **Interpretation:** *(to write)*
+![Reachable host pairs vs. fabric link failure rate](results/reachability_vs_failure.png)
+
+**Setup.** `configs/sweep.json`: k ∈ {4, 6, 8}, failure rates {0, 2, 5, 10, 15, 20}%,
+30 seeds per point (seeds 0–29). Only switch-to-switch links fail. The metric is the
+fraction of host pairs that remain connected. Each point is the mean over 30 runs, and the
+error bars show one sample standard deviation. Raw values are in `results/reachability_raw.csv`.
+
+**Results (mean ± std):**
+
+| failure rate | k = 4 | k = 6 | k = 8 |
+|---|---|---|---|
+| 0% | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| 2% | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| 5% | 0.9922 ± 0.0426 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| 10% | 0.9922 ± 0.0426 | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 |
+| 15% | 0.9767 ± 0.0712 | 1.0000 ± 0.0000 | 0.9980 ± 0.0111 |
+| 20% | 0.9300 ± 0.1088 | 0.9860 ± 0.0455 | 0.9959 ± 0.0155 |
+
+**Observations.**
+
+1. **k = 4 is the most fragile.** It is the only setting where failures reduce connectivity
+   at 5%, and at 20% the mean drops to 0.93. Its standard deviation is also the largest.
+2. **Larger k is more robust.** At 20% the mean is 0.93 for k=4, 0.986 for k=6 and 0.996
+   for k=8. The gap between k=4 and k=8 (0.93 vs 0.996) is much larger than the spread of k=8 (±0.016).
+3. **The mean hides rare events.** For k=4 at 5%, a standard deviation of 0.0426 is what you
+   get when one of 30 runs loses 28 of 120 pairs (value 0.7667) and the rest lose nothing.
+   Seed 11 is one such run: in `reachability_raw.csv` it gives 0.76667. Two failed links on the
+   same edge switch cut off both of its hosts, and 2 × 14 = 28 pairs are lost. Reporting the
+   standard deviation, or the minimum, is needed to see this.
+4. **Rates are rounded to whole links.** For k=4 there are 32 fabric links, so 5% and 10%
+   fail 2 and 3 links (round(1.6) and round(3.2)). For k=4 the 2% point fails exactly one
+   link, and a single failure never disconnects anything, because each edge switch has two
+   uplinks. That is why the 0–2% part of the curve is flat at 1.0.
+
+**Significance.** The curves show that the fat-tree's redundancy (two uplinks per edge
+switch, and (k/2)² paths between pods) pays off. Small failure rates are absorbed without any
+loss of connectivity, and the loss grows slowly with the rate. The main design lesson is that
+port count matters: at the same failure rate, a larger k keeps more hosts connected.
+
+**Limitations to discuss.**
+- The metric measures *whether* hosts can reach each other, not performance. It does not
+  measure path length, bandwidth or congestion, which would be the next step.
+- Failures are independent and uniform. Real failures often cluster on one switch or one
+  rack, which would be worse than these results.
+- The y-axis starts at 0, so the differences at small rates are hard to see. The plot is
+  correct as is, but a zoomed view (y from 0.8 to 1.0) would show the k=4 curve better.
 
 ## Files
 
@@ -156,4 +196,5 @@ the observed result, and an explanation of why it matters.*
 | `experiment.py` | Seed sweep, CSV output, plot |
 | `configs/example.json` | Example single-run config |
 | `configs/sweep.json` | Sweep config |
+| `results/` | Sweep outputs: summary and raw CSV, and the plot |
 | `tests/` | pytest suite |
