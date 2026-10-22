@@ -83,10 +83,10 @@ Outputs in `out_dir`:
   Failing host links as well is left for future work.
 - **Count:** the number of failed links is `round(rate × number_of_fabric_links)`.
   For k=4 there are 32 fabric links, so rate 0.05 fails round(1.6) = 2 links.
-  Python's `round` sends halves to the nearest even number.
+  Python's `round` sends exact halves (x.5) to the nearest even integer. Other values round normally.
 - **Selection:** links are sorted into a fixed order, then a uniform random sample is drawn with `random.Random(seed)`.
   The result depends only on (k, rate, seed).
-- **Independence:** failures are independent and uniform. There is no correlation between links and no switch-level failures.
+- **Sampling:** each fabric link is equally likely to fail. Links are drawn without replacement, so exactly `n_fail` links fail in every run. This makes the failures slightly negatively correlated, since one failure reduces the chance of another. There are no switch-level failures.
 
 ## Metric: reachable host pairs
 
@@ -180,7 +180,7 @@ port count matters: at the same failure rate, a larger k keeps more hosts connec
 **Limitations to discuss.**
 - The metric measures *whether* hosts can reach each other, not performance. It does not
   measure path length, bandwidth or congestion, which would be the next step.
-- Failures are independent and uniform. Real failures often cluster on one switch or one
+- Failures are uniform and drawn without replacement. Real failures often cluster on one switch or one
   rack, which would be worse than these results.
 - The y-axis starts at 0, so the differences at small rates are hard to see. The plot is
   correct as is, but a zoomed view (y from 0.8 to 1.0) would show the k=4 curve better.
