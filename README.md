@@ -132,7 +132,7 @@ Run with `python -m pytest`, not plain `pytest`, so the project folder is on the
 
 Each pod has k/2 edge and k/2 aggregation switches. Every edge switch connects to every
 aggregation switch in its pod. Aggregation switch `a` in each pod connects to core group `a`
-(k/2 core switches).
+(k/2 core switches). The topology has three tiers: edge, aggregation and core switches, as described in Section 2 of [1].
 
 ## Results
 
@@ -198,3 +198,15 @@ port count matters: at the same failure rate, a larger k keeps more hosts connec
 | `configs/sweep.json` | Sweep config |
 | `results/` | Sweep outputs: summary and raw CSV, and the plot |
 | `tests/` | pytest suite |
+
+## AI usage
+
+This project was developed with help from Claude (Anthropic, Claude Haiku 5.5) in a chat interface.
+Claude was used to explain the paper, draft and review code and tests, suggest the experiment design,
+and draft parts of this README. The author ran, tested and reviewed all code and results, and
+can explain every part of the submission.
+
+## References
+
+[1] M. Al-Fares, A. Loukissas, and A. Vahdat, "A scalable, commodity data center network architecture,"
+SIGCOMM Comput. Commun. Rev., vol. 38, no. 4, pp. 63–74, Oct. 2008. doi:10.1145/1402946.1402967
