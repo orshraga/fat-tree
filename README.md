@@ -218,7 +218,14 @@ port count matters: at the same failure rate, a larger k keeps more hosts connec
 
 **Significance.** At a low failure rate, a switch that loses two links is common in large networks. This is a different question from connectivity. In Example 1, the k=64 network kept all hosts connected even at 20% failures, so connectivity hides this degradation. A switch that lost two uplinks still works, but it has less redundancy, and it is the first place to look when planning maintenance.
 
-**Check against a simple model.** If each link fails independently with probability p = 0.01, a switch with d fabric links has two or more failures with probability 1 − (1−p)^d − d·p·(1−p)^(d−1). Summing over all switches gives about 0.15, 2.5, 37 and 496 for k = 8, 16, 32 and 64. The simulation gives 0.17, 1.83, 36.4 and 502.4. The match is close for k = 8, 32 and 64. For k = 16 the simulation is somewhat lower, about two standard errors (≈0.2), which is plausible with 30 seeds.
+**Why the count grows so fast.** Two things grow with k. First, the network has more switches: about 5k²/4 in total. Second, each switch has more fabric links, k/2 for edge switches and k for aggregation and core switches, so there are more pairs of links that can fail together on the same switch. The number of switches with two failures is the product of these two effects, which is why it grows faster than the network itself.
+
+**Check against a simple model.** If each link fails independently with probability p = 0.01, a switch with d fabric links has two or more failures with probability 1 − (1−p)^d − d·p·(1−p)^(d−1). Summing over all switches gives about 0.15, 2.5, 37 and 496 for k = 8, 16, 32 and 64. The simulation gives 0.17, 1.83, 36.4 and 502.4. The match is close for k = 8, 32 and 64. For k = 16 the simulation is somewhat lower, about two standard errors (≈0.2). This is within the noise of 30 runs. The model is only an approximation, because it treats each link as failing independently, while the experiment fixes the number of failed links in each run.
+
+**Limitations of this experiment.**
+- **Independent failures.** The model and the simulation both assume failures are spread at random. Real failures often cluster on one switch or one rack, which would produce more switches with two failures than this experiment shows.
+- **One failure rate.** The experiment uses only 1%. The result at other rates is not shown here, and the choice of 1% follows the assignment.
+- **Counting is not measuring performance.** A switch with two failed links is counted the same way whether it lost two of two links or two of sixty-four. The count does not show how much capacity was lost.
 
 ## Files
 
