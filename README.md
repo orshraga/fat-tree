@@ -195,6 +195,31 @@ port count matters: at the same failure rate, a larger k keeps more hosts connec
 - The y-axis starts at 0, so the differences at small rates are hard to see. The plot is
   correct as is, but a zoomed view (y from 0.8 to 1.0) would show the k=4 curve better.
 
+### Example 2: Switches with 2+ failed links at a 1% failure rate, as a function of k
+
+![Switches with 2+ failed links vs. switch port count](results/switches_1pct/switches_vs_k.png)
+
+**Setup.** `configs/switches_1pct.json`: k ∈ {4, 8, 16, 32, 64}, a fixed failure rate of 1% of switch-to-switch links, and 30 seeds per k. In each run, the experiment counts the switches that lose two or more of their fabric links. The left panel shows that count. The right panel shows it as a share of all switches (edge, aggregation and core).
+
+**Results (mean ± std over 30 seeds):**
+
+| k | failed links | switches | switches with 2+ failures | share of switches |
+|---|---|---|---|---|
+| 4 | 0 | 20 | 0.00 ± 0.00 | 0.00% |
+| 8 | 3 | 80 | 0.17 ± 0.38 | 0.21% |
+| 16 | 20 | 320 | 1.83 ± 1.21 | 0.57% |
+| 32 | 164 | 1280 | 36.37 ± 4.68 | 2.84% |
+| 64 | 1311 | 5120 | 502.37 ± 14.74 | 9.81% |
+
+**Observations.**
+1. **k=4 shows no failures at all.** 1% of its 32 fabric links is 0.32, which rounds to 0 links. This is a rounding effect, not a property of the network.
+2. **The count grows much faster than the network.** From k=32 to k=64, the number of switches grows by a factor of 4, but the number of switches with two failures grows from about 36 to about 502, a factor of about 14.
+3. **The share grows too.** From 0.2% at k=8 to almost 10% at k=64, so a larger network is more likely to contain a switch that lost two links, and each switch has more links that can fail.
+
+**Significance.** At a low failure rate, a switch that loses two links is common in large networks. This is a different question from connectivity. In Example 1, the k=64 network kept all hosts connected even at 20% failures, so connectivity hides this degradation. A switch that lost two uplinks still works, but it has less redundancy, and it is the first place to look when planning maintenance.
+
+**Check against a simple model.** If each link fails independently with probability p = 0.01, a switch with d fabric links has two or more failures with probability 1 − (1−p)^d − d·p·(1−p)^(d−1). Summing over all switches gives about 0.15, 2.5, 37 and 496 for k = 8, 16, 32 and 64. The simulation gives 0.17, 1.83, 36.4 and 502.4. The match is close for k = 8, 32 and 64. For k = 16 the simulation is somewhat lower, about two standard errors (≈0.2), which is plausible with 30 seeds.
+
 ## Files
 
 | File | Purpose |
