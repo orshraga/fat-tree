@@ -11,6 +11,7 @@ pairs remain connected.
 - [x] Basic metric: fraction of reachable host pairs (`metrics.py`)
 - [x] Command-line interface with JSON config support (`cli.py`)
 - [x] Failure-rate sweep with CSV output and matplotlib plot (`experiment.py`)
+- [x] Second analysis: switches with 2+ failed links at 1%, by k (`experiment_switches.py`)
 - [x] Results and discussion (below)
 
 ## Setup
@@ -76,6 +77,14 @@ Outputs in `out_dir`:
 - `reachability_summary.csv`: mean and standard deviation per (k, rate)
 - `reachability_vs_failure.png`: plot of the mean with standard-deviation error bars
 
+### Second experiment: switches with multiple failed links
+
+```powershell
+python experiment_switches.py --config configs/switches_1pct.json
+```
+
+The failure rate is fixed at 1%, k ∈ {4, 8, 16, 32, 64}, and each k runs 30 seeds. For each run, the experiment counts the switches that lose two or more of their fabric links, and also that count as a share of all switches. Outputs go to `results/switches_1pct/`: `switches_raw.csv`, `switches_summary.csv` and `switches_vs_k.png`.
+
 ## Failure model
 
 - **Scope:** only switch-to-switch links (edge↔aggregation and aggregation↔core) can fail.
@@ -117,6 +126,7 @@ Run with `python -m pytest`, not plain `pytest`, so the project folder is on the
 | `tests/test_failures.py` | Fabric-link count; rate 0 changes nothing; failed count = round(rate·E); rate 1 removes all fabric links; host links survive; same seed → same failures; original graph is not modified; invalid rate is rejected |
 | `tests/test_metrics.py` | Healthy network gives 120/120; all fabric links failed gives 8/120; the fraction never rises as the failure rate rises |
 | `tests/test_cli.py` | Output format; config file is read; CLI overrides config; missing k and unknown config keys are errors |
+| `tests/test_switches.py` | The switch-counting metric on hand-made failure sets (none, disjoint, shared switch, path, star); sampling count and reproducibility; k=4 at 1% fails nothing |
 
 ## Topology reference
 
@@ -197,6 +207,9 @@ port count matters: at the same failure rate, a larger k keeps more hosts connec
 | `configs/example.json` | Example single-run config |
 | `configs/sweep.json` | Sweep config |
 | `results/` | Sweep outputs: summary and raw CSV, and the plot |
+| `experiment_switches.py` | Second experiment: switches with 2+ failed links vs. k at 1% |
+| `configs/switches_1pct.json` | Config for the second experiment |
+| `results/switches_1pct/` | Second experiment outputs |
 | `tests/` | pytest suite |
 
 ## AI usage

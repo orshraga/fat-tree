@@ -19,6 +19,27 @@ def fabric_links(g: nx.Graph) -> list:
     ]
 
 
+def sample_failures(links: list, rate: float, seed: int) -> list:
+    """
+    Choose a random subset of links to fail.
+
+    Args:
+        links: the candidate links (for example from fabric_links).
+        rate:  fraction of links to fail, in [0, 1].
+        seed:  random seed, so the same inputs always fail the same links.
+
+    Returns:
+        A list of round(rate * len(links)) distinct links.
+    """
+    if not 0.0 <= rate <= 1.0:
+        raise ValueError(f"failure rate must be in [0, 1], got {rate}")
+
+    # Sort first so the sample depends only on the seed, not on the input order.
+    ordered = sorted(links, key=repr)
+    n_fail = round(rate * len(ordered))
+    return random.Random(seed).sample(ordered, n_fail)
+
+
 def inject_failures(g: nx.Graph, rate: float, seed: int):
     """
     Remove a random fraction of fabric links.
@@ -31,17 +52,8 @@ def inject_failures(g: nx.Graph, rate: float, seed: int):
     Returns:
         (damaged_graph, failed_links) where damaged_graph is a copy of g
         with the failed links removed.
-
-    The number of failed links is round(rate * number_of_fabric_links).
-    Python's round() rounds halves to the nearest even integer.
     """
-    if not 0.0 <= rate <= 1.0:
-        raise ValueError(f"failure rate must be in [0, 1], got {rate}")
-
-    # Sort first so the sample depends only on the seed, not on dict/edge order.
-    links = sorted(fabric_links(g), key=repr)
-    n_fail = round(rate * len(links))
-    failed = random.Random(seed).sample(links, n_fail)
+    failed = sample_failures(fabric_links(g), rate, seed)
 
     damaged = g.copy()
     damaged.remove_edges_from(failed)
